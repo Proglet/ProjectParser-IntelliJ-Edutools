@@ -39,13 +39,13 @@ public class Main {
 
         String gitPath = config.getString("repo");
 
-        out = Paths.get("tmp");
+        out = Paths.get("temp");
 
         if(!Files.exists(out))
             Files.createDirectory(out);
 
         System.out.println("* Cloning repository...");
-        ProcessBuilder bp = new ProcessBuilder("git", "clone", gitPath, out.toString());
+        ProcessBuilder bp = new ProcessBuilder("/usr/bin/git", "clone", gitPath, out.toString());
         Process git = bp.start();
         BufferedReader br = new BufferedReader(new InputStreamReader(git.getInputStream()));
         String line;
