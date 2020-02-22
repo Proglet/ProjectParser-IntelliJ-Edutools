@@ -70,7 +70,7 @@ public class Main {
 
         System.out.print("* Writing Json...");
         Map<String, Object> jconfig = Map.of(JsonGenerator.PRETTY_PRINTING, Boolean.TRUE);
-        JsonWriter writer = Json.createWriterFactory(jconfig).createWriter(new FileWriter("out.json"));
+        JsonWriter writer = Json.createWriterFactory(jconfig).createWriter(new FileWriter("out/exercises.json"));
         writer.write(Json.createReader(new StringReader(output.toString())).read());
         writer.close();
     }
