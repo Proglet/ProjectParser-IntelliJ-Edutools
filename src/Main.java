@@ -53,16 +53,16 @@ public class Main {
         String gitPath = config.getString("repo");
         
         Main.gitRepo = Paths.get("temp");
-        Main.zipPath = Paths.get("temp/zip");
+        Main.zipPath = Paths.get("zip");
 
         if(!Files.exists(Main.gitRepo))
-            Files.createDirectory(Main.gitRepo);
+            Files.createDirectories(Main.gitRepo);
         if(!Files.exists(zipPath))
-            Files.createDirectory(zipPath);
+            Files.createDirectories(zipPath);
         else
         {
             Util.EmptyDirectory(zipPath);
-            Files.createDirectory(zipPath);
+            Files.createDirectories(zipPath);
         }
 
         System.out.println("* Cloning repository...");
