@@ -94,7 +94,7 @@ public class Main {
 
         Files.createDirectory(zipPath.resolve(".idea"));
         Files.copy(gitRepo.resolve(".idea/misc.xml"), zipPath.resolve(".idea/misc.xml"));
-        Files.createDirectory(zipPath.resolve(".idea/modules"));
+        //Files.createDirectory(zipPath.resolve(".idea/modules"));
         String projectName = "";
 
         try {
@@ -116,7 +116,7 @@ public class Main {
                 }
             }
             System.out.println(" - Found project name " + projectName);
-            for(int i = 0; i < modules.getLength(); i++) {
+            /*for(int i = 0; i < modules.getLength(); i++) {
                 org.w3c.dom.Node module = modules.item(i);
 
                 String fileurl = module.getAttributes().getNamedItem("fileurl").getNodeValue();
@@ -145,9 +145,9 @@ public class Main {
 
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(zipPath.resolve(".idea/modules.xml").toFile());
-            transformer.transform(source, result);
+            transformer.transform(source, result);*/
 
-        } catch (ParserConfigurationException | SAXException | TransformerException e) {
+        } catch (ParserConfigurationException | SAXException/* | TransformerException*/ e) {
             e.printStackTrace();
         }
 
