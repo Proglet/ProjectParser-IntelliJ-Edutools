@@ -3,6 +3,8 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
+import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import org.w3c.dom.Document;
@@ -15,23 +17,12 @@ import javax.json.stream.JsonGenerator;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import java.util.*;
 
 public class Main {
     static Yaml yaml = new Yaml();
@@ -239,6 +230,8 @@ public class Main {
             e.printStackTrace();
         }
 
+        Set<String> points = new HashSet<>();
+        Set<Test> tests = new HashSet<>();
         for(HashMap<String, Object> file : files) {
             String filename = (String) file.get("name");
             System.out.println("   - file " + filename);
@@ -248,7 +241,10 @@ public class Main {
             fileSize += fileData.getBytes().length;
 
             CompilationUnit compilationUnit = StaticJavaParser.parse(fileData);
-            parseFile(compilationUnit.findRootNode());
+            parseFileForPoints(compilationUnit.findRootNode(), points);
+
+            parseFileForTests(compilationUnit.findRootNode(), tests);
+
 
             fileData = fileData.replace("\r\n", "\n");
             ArrayList<Map> placeholders = (ArrayList<Map>) file.get("placeholders");
@@ -272,28 +268,82 @@ public class Main {
             filesOut.add(fileOut);
 
         }
+
+        generator.writeStartArray("points");
+        for(String p : points)
+            generator.write(p);
+        generator.writeEnd();
+
+        generator.writeStartArray("tests");
+        for(Test t : tests)
+        {
+            generator.writeStartObject();
+            generator.write("name", t.name);
+            generator.write("className", t.className);
+            generator.write("point", t.point);
+            generator.writeEnd();
+        }
+        generator.writeEnd();
+
+
         generator.write("hash", Util.bytesToHex(hasher.digest()));
         generator.write("size", fileSize);
         generator.writeEnd();
 
 
-
-
         Files.writeString(taskDst.resolve("task-info.yaml"), yaml.dump(taskInfoOut));
-
-
     }
 
-    private static void parseFile(Node rootNode) {
+    private static String findName(Node node)
+    {
+        for(Node n : node.getChildNodes())
+        {
+            if(n instanceof SimpleName)
+                return ((SimpleName)n).asString();
+        }
+        return "";
+    }
+
+    private static String findPoint(Node node)
+    {
+        for(Node n : node.getChildNodes()) {
+            if(n instanceof SingleMemberAnnotationExpr) {
+                if(n.getChildNodes().get(0).toString().equals("Points")) {
+                    return ((StringLiteralExpr)n.getChildNodes().get(1)).getValue();
+                }
+            }
+        }
+        if(node.getParentNode().isPresent())
+            return findPoint(node.getParentNode().get());
+        return "";
+    }
+
+
+    private static void parseFileForPoints(Node rootNode, Set<String> points) {
         for(Node n : rootNode.getChildNodes()) {
             if(n instanceof ClassOrInterfaceDeclaration || n instanceof MethodDeclaration) {
-                parseFile(n);
+                parseFileForPoints(n, points);
             }
             else if(n instanceof SingleMemberAnnotationExpr) {
                 if(n.getChildNodes().get(0).toString().equals("Points")) {
-                    generator.writeStartArray("points");
-                    generator.write(((StringLiteralExpr)n.getChildNodes().get(1)).getValue());
-                    generator.writeEnd();
+                    points.add(((StringLiteralExpr)n.getChildNodes().get(1)).getValue());
+                }
+            }
+        }
+    }
+
+
+    private static void parseFileForTests(Node rootNode, Set<Test> tests) {
+        for(Node n : rootNode.getChildNodes()) {
+            if(n instanceof ClassOrInterfaceDeclaration || n instanceof MethodDeclaration) {
+                parseFileForTests(n, tests);
+            }
+            else if(n instanceof MarkerAnnotationExpr) {
+                if(n.getChildNodes().get(0).toString().equals("Test")) {
+                    tests.add(new Test(
+                            findName(rootNode),
+                            findName(rootNode.getParentNode().get()),
+                            findPoint(rootNode)));
                 }
             }
         }
