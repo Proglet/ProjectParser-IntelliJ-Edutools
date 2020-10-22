@@ -36,7 +36,9 @@ public class Main {
     public static void main(String[] args) throws IOException {
         StringWriter output = new StringWriter();
         generator = Json.createGenerator(output);
-        generator.writeStartArray();
+
+        generator.writeStartObject();
+        generator.writeStartArray("exercises");
 
         JsonReader reader = Json.createReader(new FileInputStream("config.json"));
         JsonObject config = reader.readObject();
@@ -150,7 +152,12 @@ public class Main {
         }
 
 
+        generator.writeEnd(); //end of array
+        generator.writeStartObject("properties");
+        generator.write("dockerimage", (String)courseInfo.get("testrunner"));
         generator.writeEnd();
+        generator.writeEnd();
+
         generator.close();
 
         System.out.println("* Writing Json...");
